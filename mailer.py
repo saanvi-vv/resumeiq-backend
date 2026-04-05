@@ -12,6 +12,11 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 
 def send_verification_email(name: str, email: str, token: str):
+    print(f"[EMAIL] Attempting to send to: {email}")
+    print(f"[EMAIL] From: {GMAIL_USER}")
+    print(f"[EMAIL] App password set: {bool(GMAIL_APP_PASSWORD)}")
+    print(f"[EMAIL] App password length: {len(GMAIL_APP_PASSWORD) if GMAIL_APP_PASSWORD else 0}")
+    
     verification_link = f"{FRONTEND_URL}/verify?token={token}"
 
     msg = MIMEMultipart("alternative")
@@ -48,6 +53,10 @@ def send_verification_email(name: str, email: str, token: str):
 
     msg.attach(MIMEText(html, "html"))
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-        server.sendmail(GMAIL_USER, email, msg.as_string())
+    try:
+        print(f"[EMAIL] Connecting to Gmail SMTP...")
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            print(f"[EMAIL] Connected. Logging in...")
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            print(f"[EMAIL] Logged in. Sending...")
+            server.se
