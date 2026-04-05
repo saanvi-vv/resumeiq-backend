@@ -74,30 +74,42 @@ async def home():
 
 @app.post("/auth/register", response_model=UserResponse, status_code=201)
 async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
+    # Check duplicate email
     result = await db.execute(select(User).where(User.email == user.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Email already registered")
 
-    verification_token = secrets.token_urlsafe(32)
+    # Block disposable/fake email domains
+    blocked_domains = [
+        "mailinator.com", "tempmail.com", "guerrillamail.com",
+        "10minutemail.com", "throwaway.email", "fakeinbox.com",
+        "yopmail.com", "sharklasers.com", "trashmail.com",
+        "maildrop.cc", "dispostable.com", "spamgourmet.com"
+    ]
+    email_domain = user.email.split("@")[1].lower()
+    if email_domain in blocked_domains:
+        raise HTTPException(status_code=400, detail="Please use a real email address")
 
+    # Set is_verified=True so anyone can login immediately
+    verification_token = secrets.token_urlsafe(32)
     new_user = User(
         name=user.name,
         email=user.email,
         hashed_password=hash_password(user.password),
-        is_verified=False,
+        is_verified=True,  # ← no verification required
         verification_token=verification_token
     )
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
 
+    # Still try to send welcome email but don't block if it fails
     try:
         send_verification_email(new_user.name, new_user.email, verification_token)
     except Exception as e:
         print(f"Email send failed: {e}")
 
     return new_user
-
 
 @app.get("/auth/verify")
 async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
@@ -121,9 +133,6 @@ async def login(credentials: LoginRequest, db: AsyncSession = Depends(get_db)):
 
     if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    if not user.is_verified:
-        raise HTTPException(status_code=403, detail="Please verify your email before logging in")
 
     token = create_access_token(data={"sub": str(user.id)})
     return TokenResponse(access_token=token)

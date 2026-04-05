@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import Optional
 from datetime import datetime
 
@@ -7,7 +7,7 @@ from datetime import datetime
 
 class UserCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=50)
-    email: str
+    email: EmailStr  # ← this automatically validates email format
     password: str = Field(..., min_length=8)
 
 class UserResponse(BaseModel):
