@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+sqlalchemy[asyncio]
+asyncpg
+alembic
+psycopg2-binary
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]
+bcrypt==4.0.1
+pypdf2
+groq
+python-multipart
+pydantic
+resend
+reportlab
